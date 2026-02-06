@@ -10,7 +10,7 @@ Technical and user documentation for the Career OS platform — a job search agg
 ### Features
 - [Job Aggregation](./job-aggregation.md) — Multi-source job search and tracking *(coming soon)*
 - [Document Management](./document-management.md) — Uploading and organizing resumes, cover letters, and job descriptions
-- [Resume Tailoring](./resume-tailoring.md) — AI-powered resume and cover letter generation *(Phase 2)*
+- [Resume Tailoring](./resume-tailoring.md) — AI-powered resume and cover letter generation
 
 ### Technical Reference
 - [Architecture](./architecture.md) — System design, data model, and security
@@ -27,8 +27,9 @@ Technical and user documentation for the Career OS platform — a job search agg
 | Supabase auth + document storage | Live | Phase 1 |
 | Document upload (PDF/DOCX/TXT parsing) | Live | Phase 1 |
 | Document pairing (resume ↔ job description) | Live | Phase 1 |
-| Tailoring engine (Claude API) | Planned | Phase 2 |
-| Side-by-side output comparison | Planned | Phase 3 |
+| Tailoring engine (Claude API) | Live | Phase 2 |
+| Side-by-side output comparison | Live | Phase 2 |
+| Citation tracking | Live | Phase 2 |
 | Story bank + vector retrieval | Planned | Phase 4 |
 
 ---
@@ -37,4 +38,5 @@ Technical and user documentation for the Career OS platform — a job search agg
 
 - **App**: `http://localhost:3000`
 - **Documents**: `http://localhost:3000/documents`
+- **Tailor**: `http://localhost:3000/tailor`
 - **Supabase Dashboard**: `https://supabase.com/dashboard`

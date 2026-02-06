@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { Briefcase, FileText, LogOut, LogIn } from 'lucide-react';
+import { Briefcase, FileText, Sparkles, LogOut, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Job Hunt', icon: Briefcase },
   { href: '/documents', label: 'Documents', icon: FileText, protected: true },
+  { href: '/tailor', label: 'Tailor', icon: Sparkles, protected: true },
 ];
 
 export function AppNav() {

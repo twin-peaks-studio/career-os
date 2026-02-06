@@ -137,3 +137,35 @@ For document uploads:
 ```
 Browser → FormData POST → API Route → Parse file → Upload to Storage → Insert DB record → Response
 ```
+
+For tailoring:
+```
+Browser → POST /api/tailor → Create session (status: pending) → Return immediately
+                           → Background: Assemble context → Build prompts → Call Claude API (parallel) → Save outputs → Update status
+Browser → GET /api/tailor/[id] (polling every 2s) → Session + outputs → Render side-by-side
+```
+
+## Tailoring Engine
+
+### Pipeline
+
+1. **Context Assembly** (`src/lib/tailoring/context-assembler.ts`): Queries all user documents from Supabase, groups by type, builds paired examples, and formats into XML-tagged sections.
+
+2. **Prompt Construction** (`src/lib/tailoring/prompts.ts`): Two prompt templates per output type (resume + cover letter × user_style + ai_optimized). Shared rules enforce factual accuracy and citation requirements.
+
+3. **Generation** (`src/lib/tailoring/engine.ts`): Calls Claude API in parallel for each variant. Parses XML-tagged output to extract content and citations. Saves results to `tailoring_outputs`.
+
+4. **Polling**: Client uses React Query with a 2-second refetch interval while session status is `pending` or `generating`.
+
+### Model
+
+- Claude Sonnet (`claude-sonnet-4-5-20250929`)
+- 4096 max output tokens per generation
+- 2-4 API calls per session (depending on resume + cover letter selection)
+
+### Anti-Hallucination
+
+- Prompts explicitly forbid fabrication and require citations
+- Every claim must reference a source document
+- Citations are stored as structured JSON for auditability
+- If source documents lack relevant experience for a JD requirement, the model is instructed to omit rather than invent
