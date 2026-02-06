@@ -8,7 +8,8 @@ import { SearchCard } from '@/components/searches/search-card';
 import { JobList } from '@/components/jobs/job-list';
 import { useSearches, useCreateSearch, useDeleteSearch, useFetchJobs, useClearAllJobs } from '@/hooks/use-searches';
 import { useJobs, useTodayJobs } from '@/hooks/use-jobs';
-import { Briefcase, Plus, RefreshCw, Sparkles, X, Trash2 } from 'lucide-react';
+import { Plus, RefreshCw, Sparkles, X, Trash2 } from 'lucide-react';
+import { AppNav } from '@/components/layout/app-nav';
 import { EmploymentType } from '@/types';
 
 type SourceFilter = 'all' | 'linkedin' | 'non-linkedin';
@@ -88,25 +89,19 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
-      {/* Header */}
-      <header className="bg-white border-b border-[var(--color-border)] sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)] flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-[var(--color-text)]">Job Hunt</h1>
-                <p className="text-sm text-[var(--color-text-muted)]">
-                  {searches.length} tracked searches
-                </p>
-              </div>
-            </div>
+      <AppNav />
 
+      {/* Sub-header with actions */}
+      <div className="bg-white border-b border-[var(--color-border)]">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-[var(--color-text-muted)]">
+              {searches.length} tracked searches
+            </p>
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
+                size="sm"
                 onClick={handleClearAllJobs}
                 disabled={clearAllJobs.isPending}
                 className="text-[var(--color-error)] hover:bg-red-50"
@@ -117,6 +112,7 @@ export default function Dashboard() {
               {searches.length > 0 && (
                 <Button
                   variant="secondary"
+                  size="sm"
                   onClick={handleFetchAll}
                   disabled={fetchingSearchId === 'all'}
                 >
@@ -124,14 +120,14 @@ export default function Dashboard() {
                   Fetch All
                 </Button>
               )}
-              <Button onClick={() => setShowNewSearch(true)}>
+              <Button size="sm" onClick={() => setShowNewSearch(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 New Search
               </Button>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
