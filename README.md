@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Job Hunt
 
-## Getting Started
+A local job search aggregator that consolidates job postings from Google Jobs, Indeed, and LinkedIn into a single view.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Tracked Searches**: Save search queries that automatically fetch new jobs daily
+- **Deduplication**: Same job from multiple sources shows once with merged source badges
+- **"Posted Today" Highlighting**: Jobs from the last 24 hours are prominently marked
+- **Near-Zero Cost**: Uses free tiers of SerpAPI (100/month) and RSS feeds
+
+## Prerequisites
+
+- Node.js 20+ (use `nvm use 20` if you have nvm installed)
+- SerpAPI key (free tier at [serpapi.com](https://serpapi.com))
+
+## Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Create environment file:**
+   ```bash
+   cp .env.example .env.local
+   ```
+
+3. **Add your SerpAPI key to `.env.local`:**
+   ```
+   SERPAPI_KEY=your_key_here
+   ```
+
+4. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open [http://localhost:3000](http://localhost:3000)**
+
+## Usage
+
+1. **Create a Tracked Search**: Click "New Search" and enter your job title, location, and employment type
+2. **Fetch Jobs**: Click the refresh button on a search card or "Fetch All" to pull jobs from all sources
+3. **View Results**: Jobs appear sorted by date, with "Posted Today" jobs at the top
+4. **Browse by Search**: Click "View Jobs" on any search card to see jobs for that specific search
+
+## Data Sources
+
+| Source | Method | Cost |
+|--------|--------|------|
+| Google Jobs | SerpAPI | Free: 100/month |
+| Indeed | RSS Feed | Free |
+| LinkedIn | Public API | Free |
+
+## Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Database**: SQLite with Drizzle ORM
+- **Styling**: Tailwind CSS with OKLCH colors
+- **State**: React Query
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js pages and API routes
+│   ├── api/
+│   │   ├── searches/       # CRUD for tracked searches
+│   │   ├── jobs/           # Get job listings
+│   │   └── fetch/          # Trigger job fetching
+│   └── page.tsx            # Main dashboard
+├── components/             # UI components
+├── hooks/                  # React Query hooks
+├── lib/
+│   ├── api/                # Source fetchers
+│   ├── db/                 # Database schema
+│   └── jobs/               # Deduplication logic
+└── types/                  # TypeScript types
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Database
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The SQLite database is stored at `data/jobs.db`. Key tables:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `tracked_searches`: Your saved search queries
+- `jobs`: All fetched jobs (deduplicated)
+- `search_jobs`: Links searches to their found jobs
+- `seen_jobs`: Tracks which jobs you've viewed
 
-## Learn More
+## Cost Optimization
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+With 15 tracked searches fetched once daily:
+- SerpAPI: 15 × 30 = 45 calls/month (within free tier of 100)
+- RSS feeds: Unlimited, free
+- **Total: $0/month**

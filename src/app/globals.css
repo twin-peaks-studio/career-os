@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary - Purple/Indigo from design system */
+  --color-primary: oklch(0.5417 0.1790 288);
+  --color-primary-light: oklch(0.6417 0.1490 288);
+  --color-primary-dark: oklch(0.4417 0.1990 288);
+  --color-primary-50: oklch(0.97 0.02 288);
+  --color-primary-100: oklch(0.94 0.04 288);
+  --color-primary-200: oklch(0.88 0.08 288);
+  --color-primary-700: oklch(0.42 0.16 288);
+
+  /* Backgrounds */
+  --color-bg: oklch(0.985 0 0);
+  --color-bg-card: oklch(1 0 0);
+  --color-bg-sidebar: oklch(0.97 0.005 288);
+
+  /* Borders */
+  --color-border: oklch(0.9 0.01 288);
+  --color-border-hover: oklch(0.8 0.02 288);
+
+  /* Text */
+  --color-text: oklch(0.2 0.02 288);
+  --color-text-muted: oklch(0.5 0.01 288);
+  --color-text-inverse: oklch(0.98 0 0);
+
+  /* Source badges */
+  --color-google: oklch(0.55 0.15 142);
+  --color-indeed: oklch(0.55 0.18 265);
+  --color-linkedin: oklch(0.50 0.15 240);
+
+  /* Feedback */
+  --color-success: oklch(0.55 0.15 145);
+  --color-warning: oklch(0.65 0.15 85);
+  --color-error: oklch(0.55 0.18 25);
+
+  /* New today badge */
+  --color-new-today: oklch(0.55 0.18 145);
+  --color-new-today-bg: oklch(0.92 0.04 145);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Primary palette */
+  --color-primary-DEFAULT: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-50: var(--color-primary-50);
+  --color-primary-100: var(--color-primary-100);
+  --color-primary-200: var(--color-primary-200);
+  --color-primary-700: var(--color-primary-700);
+
+  /* Source colors */
+  --color-source-google: var(--color-google);
+  --color-source-indeed: var(--color-indeed);
+  --color-source-linkedin: var(--color-linkedin);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Card base styles */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px oklch(0.2 0 0 / 0.05);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: 0 4px 6px oklch(0.2 0 0 / 0.07);
+}
+
+/* Utility classes for source badges */
+.badge-google {
+  background: oklch(0.92 0.04 142);
+  color: oklch(0.35 0.12 142);
+}
+
+.badge-indeed {
+  background: oklch(0.92 0.04 265);
+  color: oklch(0.35 0.14 265);
+}
+
+.badge-linkedin {
+  background: oklch(0.92 0.04 240);
+  color: oklch(0.35 0.12 240);
+}
+
+.badge-new-today {
+  background: var(--color-new-today-bg);
+  color: var(--color-new-today);
 }
