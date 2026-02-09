@@ -2,6 +2,7 @@ import { pgTable, text, boolean, timestamp, serial, jsonb, primaryKey } from 'dr
 
 export const trackedSearches = pgTable('tracked_searches', {
   id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
   query: text('query').notNull(),
   location: text('location'),
   employmentType: text('employment_type').default('all'),
@@ -10,6 +11,8 @@ export const trackedSearches = pgTable('tracked_searches', {
   lastFetchedAt: timestamp('last_fetched_at'),
 });
 
+// Jobs stay global — they're shared listings, not user-specific.
+// If two users search for the same job, we don't want duplicate rows.
 export const jobs = pgTable('jobs', {
   id: text('id').primaryKey(),
   dedupHash: text('dedup_hash').unique().notNull(),
@@ -37,13 +40,20 @@ export const searchJobs = pgTable('search_jobs', {
   primaryKey({ columns: [table.searchId, table.jobId] }),
 ]);
 
+// seenJobs now tracks per-user: "has THIS user seen THIS job?"
+// Previously jobId was the only PK — meaning one user marking a job "seen"
+// would mark it seen for everyone. Now it's (userId + jobId).
 export const seenJobs = pgTable('seen_jobs', {
-  jobId: text('job_id').primaryKey().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  jobId: text('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
   seenAt: timestamp('seen_at').notNull(),
-});
+}, (table) => [
+  primaryKey({ columns: [table.userId, table.jobId] }),
+]);
 
 export const savedJobs = pgTable('saved_jobs', {
   id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
   jobId: text('job_id').notNull().references(() => jobs.id, { onDelete: 'cascade' }),
   savedAt: timestamp('saved_at').notNull(),
   notes: text('notes'),

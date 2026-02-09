@@ -7,24 +7,35 @@ A Next.js job search aggregator that consolidates postings from Google Jobs
 
 - **Framework**: Next.js 16 (App Router)
 - **Database**: Supabase PostgreSQL with Drizzle ORM (migrated from SQLite)
+- **Auth**: Supabase Auth via `@supabase/ssr` (cookie-based sessions)
 - **Styling**: Tailwind CSS 4 with OKLCH colors
 - **State**: TanStack React Query
 - **DB Driver**: `postgres` (postgres.js) with `prepare: false` for Supabase pooler
 - **Tables**: `tracked_searches`, `jobs`, `search_jobs`, `seen_jobs`, `saved_jobs`
 
+### Auth Architecture
+- **Supabase Auth** handles user accounts (email/password signup/login)
+- **Middleware** (`src/middleware.ts`) refreshes sessions and redirects unauthenticated users to `/login`
+- **API routes** use `getAuthenticatedUser()` from `src/lib/supabase/auth.ts` to check auth
+- **User isolation**: `tracked_searches`, `seen_jobs`, `saved_jobs` have `user_id` columns
+- **`jobs` table is global** — shared listings, not user-specific
+- **Client-side**: `useAuth()` hook from `src/components/auth-provider.tsx` provides user state
+
 ### Database Access Pattern
 - **Drizzle ORM** for all SQL queries (type-safe, vendor-agnostic, full SQL power)
-- **Supabase JS Client** will be added alongside Drizzle for auth, storage, and real-time
-- Both coexist: Drizzle for data queries, Supabase client for platform features
+- **Supabase JS Client** (`@supabase/ssr`) for auth only (login, signup, session management)
+- Both coexist: Drizzle for data queries, Supabase client for auth
 
 ### Environment Variables
-- `DATABASE_URL` — Supabase PostgreSQL connection string (use transaction pooler, port 6543)
+- `DATABASE_URL` — Supabase PostgreSQL connection string
 - `SERPAPI_KEY` — Google Jobs API key
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase public anon key (safe to expose)
 
 ### Setup for New Environments
-1. Set `DATABASE_URL` and `SERPAPI_KEY` in environment
-2. Run `npx drizzle-kit push` to create/sync tables
-3. Deploy (Vercel auto-builds from repo)
+1. Set all env vars in Vercel (DATABASE_URL, SERPAPI_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)
+2. Configure Supabase Auth: set Site URL and redirect URLs in Supabase Dashboard → Authentication → URL Configuration
+3. Deploy (Vercel auto-builds and runs `drizzle-kit push --force` to sync schema)
 
 ## Resume Tailoring Feature — Planned
 

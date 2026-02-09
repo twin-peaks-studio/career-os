@@ -8,8 +8,9 @@ import { SearchCard } from '@/components/searches/search-card';
 import { JobList } from '@/components/jobs/job-list';
 import { useSearches, useCreateSearch, useDeleteSearch, useFetchJobs, useClearAllJobs } from '@/hooks/use-searches';
 import { useJobs, useTodayJobs } from '@/hooks/use-jobs';
-import { Briefcase, Plus, RefreshCw, Sparkles, X, Trash2 } from 'lucide-react';
+import { Briefcase, Plus, RefreshCw, Sparkles, X, Trash2, LogOut } from 'lucide-react';
 import { EmploymentType } from '@/types';
+import { useAuth } from '@/components/auth-provider';
 
 type SourceFilter = 'all' | 'linkedin' | 'non-linkedin';
 
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [selectedSearchId, setSelectedSearchId] = useState<string | null>(null);
   const [fetchingSearchId, setFetchingSearchId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const { user, signOut } = useAuth();
 
   // Data hooks
   const { data: searches = [], isLoading: searchesLoading } = useSearches();
@@ -105,6 +107,19 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              {user && (
+                <span className="text-sm text-[var(--color-text-muted)] hidden sm:inline">
+                  {user.email}
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                onClick={signOut}
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-6 bg-[var(--color-border)]" />
               <Button
                 variant="ghost"
                 onClick={handleClearAllJobs}

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { jobs, searchJobs, seenJobs } from '@/lib/db/schema';
-import { eq, desc, gte, sql, inArray } from 'drizzle-orm';
+import { jobs, searchJobs, seenJobs, trackedSearches } from '@/lib/db/schema';
+import { eq, desc, gte, inArray, and } from 'drizzle-orm';
 import { Job, Source } from '@/types';
 import { isPostedToday } from '@/lib/jobs/deduplicator';
+import { getAuthenticatedUser } from '@/lib/supabase/auth';
 
 function dbJobToJob(row: typeof jobs.$inferSelect): Job {
   return {
@@ -27,8 +28,13 @@ function dbJobToJob(row: typeof jobs.$inferSelect): Job {
 }
 
 // GET /api/jobs?searchId=xxx - Get jobs for a tracked search
-// GET /api/jobs?today=true - Get all jobs posted today
+// GET /api/jobs?today=true - Get today's jobs from this user's searches
 export async function GET(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const searchId = searchParams.get('searchId');
@@ -37,17 +43,49 @@ export async function GET(request: NextRequest) {
     let jobRows: (typeof jobs.$inferSelect)[];
 
     if (today) {
-      // Get all jobs posted in the last 24 hours
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      // Only show today's jobs from THIS user's searches
+      const userSearchIds = await db
+        .select({ id: trackedSearches.id })
+        .from(trackedSearches)
+        .where(eq(trackedSearches.userId, user.id));
+
+      const sIds = userSearchIds.map(s => s.id);
+
+      if (sIds.length === 0) {
+        return NextResponse.json([]);
+      }
+
+      const userJobIds = await db
+        .select({ jobId: searchJobs.jobId })
+        .from(searchJobs)
+        .where(inArray(searchJobs.searchId, sIds));
+
+      const jobIds = [...new Set(userJobIds.map(r => r.jobId))];
+
+      if (jobIds.length === 0) {
+        return NextResponse.json([]);
+      }
 
       jobRows = await db
         .select()
         .from(jobs)
-        .where(gte(jobs.postedAt, twentyFourHoursAgo))
+        .where(and(inArray(jobs.id, jobIds), gte(jobs.postedAt, twentyFourHoursAgo)))
         .orderBy(desc(jobs.postedAt))
         .limit(30);
     } else if (searchId) {
-      // Get jobs linked to a specific search
+      // Verify this search belongs to the current user before showing its jobs
+      const searchOwner = await db
+        .select({ userId: trackedSearches.userId })
+        .from(trackedSearches)
+        .where(and(eq(trackedSearches.id, searchId), eq(trackedSearches.userId, user.id)))
+        .limit(1);
+
+      if (searchOwner.length === 0) {
+        return NextResponse.json({ error: 'Search not found' }, { status: 404 });
+      }
+
       const linkedJobIds = await db
         .select({ jobId: searchJobs.jobId })
         .from(searchJobs)
@@ -66,7 +104,6 @@ export async function GET(request: NextRequest) {
         .orderBy(desc(jobs.postedAt))
         .limit(30);
     } else {
-      // Get all jobs (most recent first)
       jobRows = await db
         .select()
         .from(jobs)
@@ -74,8 +111,11 @@ export async function GET(request: NextRequest) {
         .limit(30);
     }
 
-    // Get seen status for all jobs
-    const seenJobIds = await db.select({ jobId: seenJobs.jobId }).from(seenJobs);
+    // Get seen status for THIS user only
+    const seenJobIds = await db
+      .select({ jobId: seenJobs.jobId })
+      .from(seenJobs)
+      .where(eq(seenJobs.userId, user.id));
     const seenSet = new Set(seenJobIds.map(row => row.jobId));
 
     const jobsWithMeta = jobRows.map(row => {
@@ -87,7 +127,6 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Sort: posted today first, then by date
     jobsWithMeta.sort((a, b) => {
       if (a.isPostedToday && !b.isPostedToday) return -1;
       if (!a.isPostedToday && b.isPostedToday) return 1;
@@ -107,8 +146,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/jobs/seen - Mark a job as seen
+// POST /api/jobs - Mark a job as seen (for this user)
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { jobId, action } = body;
@@ -121,8 +165,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'mark_seen') {
-      // Insert or ignore if already exists
+      // Record that THIS user has seen this job
       await db.insert(seenJobs).values({
+        userId: user.id,
         jobId,
         seenAt: new Date(),
       }).onConflictDoNothing();
