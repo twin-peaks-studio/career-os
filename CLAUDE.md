@@ -2,14 +2,29 @@
 
 ## What This App Is Today
 
-A **local-only Next.js job search aggregator** that consolidates postings from Google Jobs
-(SerpAPI), Indeed (RSS), and LinkedIn (RSS) into a single view.
+A Next.js job search aggregator that consolidates postings from Google Jobs
+(SerpAPI), Indeed (RSS), and LinkedIn (RSS) into a single view. Deployed on **Vercel**.
 
 - **Framework**: Next.js 16 (App Router)
-- **Database**: SQLite with Drizzle ORM
+- **Database**: Supabase PostgreSQL with Drizzle ORM (migrated from SQLite)
 - **Styling**: Tailwind CSS 4 with OKLCH colors
 - **State**: TanStack React Query
+- **DB Driver**: `postgres` (postgres.js) with `prepare: false` for Supabase pooler
 - **Tables**: `tracked_searches`, `jobs`, `search_jobs`, `seen_jobs`, `saved_jobs`
+
+### Database Access Pattern
+- **Drizzle ORM** for all SQL queries (type-safe, vendor-agnostic, full SQL power)
+- **Supabase JS Client** will be added alongside Drizzle for auth, storage, and real-time
+- Both coexist: Drizzle for data queries, Supabase client for platform features
+
+### Environment Variables
+- `DATABASE_URL` — Supabase PostgreSQL connection string (use transaction pooler, port 6543)
+- `SERPAPI_KEY` — Google Jobs API key
+
+### Setup for New Environments
+1. Set `DATABASE_URL` and `SERPAPI_KEY` in environment
+2. Run `npx drizzle-kit push` to create/sync tables
+3. Deploy (Vercel auto-builds from repo)
 
 ## Resume Tailoring Feature — Planned
 
