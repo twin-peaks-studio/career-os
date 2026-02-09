@@ -25,8 +25,8 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
     if (existing.length > 0) {
       // Job exists - merge sources if needed
       const existingJob = existing[0];
-      const existingSources: Source[] = JSON.parse(existingJob.sources);
-      const existingUrls: Record<string, string> = JSON.parse(existingJob.urls);
+      const existingSources: Source[] = [...(existingJob.sources as Source[])];
+      const existingUrls: Record<string, string> = { ...(existingJob.urls as Record<string, string>) };
 
       let updated = false;
 
@@ -48,8 +48,8 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
         await db
           .update(jobs)
           .set({
-            sources: JSON.stringify(existingSources),
-            urls: JSON.stringify(existingUrls),
+            sources: existingSources,
+            urls: existingUrls,
           })
           .where(eq(jobs.id, existingJob.id));
       }
@@ -80,8 +80,8 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
         salary: job.salary,
         postedAt: job.postedAt,
         firstSeenAt: now,
-        sources: JSON.stringify(job.sources),
-        urls: JSON.stringify(job.urls),
+        sources: job.sources,
+        urls: job.urls,
       });
 
       // Link to search

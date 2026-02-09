@@ -21,8 +21,8 @@ function dbJobToJob(row: typeof jobs.$inferSelect): Job {
     salary: row.salary,
     postedAt: row.postedAt,
     firstSeenAt: row.firstSeenAt,
-    sources: JSON.parse(row.sources) as Source[],
-    urls: JSON.parse(row.urls) as Record<Source, string>,
+    sources: row.sources as Source[],
+    urls: row.urls as Record<Source, string>,
   };
 }
 
