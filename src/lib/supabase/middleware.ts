@@ -40,12 +40,13 @@ export async function updateSession(request: NextRequest) {
 
   // Only redirect page requests, not API calls (API routes return 401 themselves)
   if (!request.nextUrl.pathname.startsWith('/api')) {
-    const isAuthPage =
+    const isPublicPage =
       request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/signup') ||
-      request.nextUrl.pathname.startsWith('/auth');
+      request.nextUrl.pathname.startsWith('/auth') ||
+      request.nextUrl.pathname.startsWith('/landing');
 
-    if (!user && !isAuthPage) {
+    if (!user && !isPublicPage) {
       // Not logged in + trying to access a protected page → go to login
       const url = request.nextUrl.clone();
       url.pathname = '/login';
