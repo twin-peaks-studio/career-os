@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { trackedSearches, jobs, searchJobs } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { aggregateJobs } from '@/lib/api/aggregator';
-import { generateDedupHash } from '@/lib/jobs/deduplicator';
 import { normalizeTitle, normalizeCompany, normalizeLocation } from '@/lib/jobs/normalizer';
 import { SearchParams, Job, Source } from '@/types';
+import { getAuthenticatedUser } from '@/lib/supabase/auth';
 
 /**
- * Store jobs in the database, handling deduplication
+ * Store jobs in the database, handling deduplication.
+ * Jobs are global (shared) — the storeJobs logic doesn't change with auth.
  */
 async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> {
   let newJobsCount = 0;
   const now = new Date();
 
   for (const job of fetchedJobs) {
-    // Check if job already exists by dedup hash
     const existing = await db
       .select()
       .from(jobs)
@@ -23,7 +23,6 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
       .limit(1);
 
     if (existing.length > 0) {
-      // Job exists - merge sources if needed
       const existingJob = existing[0];
       const existingSources: Source[] = [...(existingJob.sources as Source[])];
       const existingUrls: Record<string, string> = { ...(existingJob.urls as Record<string, string>) };
@@ -54,7 +53,6 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
           .where(eq(jobs.id, existingJob.id));
       }
 
-      // Link to search if not already linked
       await db
         .insert(searchJobs)
         .values({
@@ -64,7 +62,6 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
         })
         .onConflictDoNothing();
     } else {
-      // New job - insert it
       await db.insert(jobs).values({
         id: job.id,
         dedupHash: job.dedupHash,
@@ -84,7 +81,6 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
         urls: job.urls,
       });
 
-      // Link to search
       await db.insert(searchJobs).values({
         searchId,
         jobId: job.id,
@@ -98,8 +94,13 @@ async function storeJobs(fetchedJobs: Job[], searchId: string): Promise<number> 
   return newJobsCount;
 }
 
-// POST /api/fetch - Trigger a fetch for all active tracked searches or a specific one
+// POST /api/fetch - Trigger a fetch for this user's searches
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json().catch(() => ({}));
     const { searchId } = body;
@@ -107,17 +108,17 @@ export async function POST(request: NextRequest) {
     let searches;
 
     if (searchId) {
-      // Fetch for a specific search
+      // Fetch for a specific search — but only if it belongs to this user
       searches = await db
         .select()
         .from(trackedSearches)
-        .where(eq(trackedSearches.id, searchId));
+        .where(and(eq(trackedSearches.id, searchId), eq(trackedSearches.userId, user.id)));
     } else {
-      // Fetch for all active searches
+      // Fetch for all of THIS user's active searches
       searches = await db
         .select()
         .from(trackedSearches)
-        .where(eq(trackedSearches.isActive, true));
+        .where(and(eq(trackedSearches.isActive, true), eq(trackedSearches.userId, user.id)));
     }
 
     if (searches.length === 0) {
@@ -135,7 +136,6 @@ export async function POST(request: NextRequest) {
       sources: Array<{ name: string; count: number; error?: string }>;
     }> = [];
 
-    // Process each search
     for (const search of searches) {
       const params: SearchParams = {
         query: search.query,
@@ -143,13 +143,9 @@ export async function POST(request: NextRequest) {
         employmentType: search.employmentType as SearchParams['employmentType'],
       };
 
-      // Fetch jobs from all sources
       const result = await aggregateJobs(params);
-
-      // Store in database
       const newJobsCount = await storeJobs(result.jobs, search.id);
 
-      // Update last fetched timestamp
       await db
         .update(trackedSearches)
         .set({ lastFetchedAt: new Date() })
@@ -178,10 +174,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/fetch/status - Get fetch status
+// GET /api/fetch/status - Get fetch status for this user's searches
 export async function GET() {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const searches = await db.select().from(trackedSearches);
+    const searches = await db
+      .select()
+      .from(trackedSearches)
+      .where(eq(trackedSearches.userId, user.id));
 
     const status = searches.map(search => ({
       id: search.id,

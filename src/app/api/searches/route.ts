@@ -4,25 +4,33 @@ import { trackedSearches, searchJobs, jobs } from '@/lib/db/schema';
 import { eq, sql, and, gte } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { TrackedSearchWithStats, EmploymentType } from '@/types';
+import { getAuthenticatedUser } from '@/lib/supabase/auth';
 
-// GET /api/searches - List all tracked searches with stats
+// GET /api/searches - List this user's tracked searches with stats
 export async function GET() {
-  try {
-    const searches = await db.select().from(trackedSearches).orderBy(trackedSearches.createdAt);
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    // Get job counts for each search
+  try {
+    // Only fetch THIS user's searches
+    const searches = await db
+      .select()
+      .from(trackedSearches)
+      .where(eq(trackedSearches.userId, user.id))
+      .orderBy(trackedSearches.createdAt);
+
     const now = new Date();
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
     const searchesWithStats: TrackedSearchWithStats[] = await Promise.all(
       searches.map(async (search) => {
-        // Total jobs linked to this search
         const totalResult = await db
           .select({ count: sql<number>`count(*)` })
           .from(searchJobs)
           .where(eq(searchJobs.searchId, search.id));
 
-        // Jobs posted today linked to this search
         const todayResult = await db
           .select({ count: sql<number>`count(*)` })
           .from(searchJobs)
@@ -58,8 +66,13 @@ export async function GET() {
   }
 }
 
-// POST /api/searches - Create a new tracked search
+// POST /api/searches - Create a new tracked search for this user
 export async function POST(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { query, location, employmentType } = body;
@@ -76,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     await db.insert(trackedSearches).values({
       id,
+      userId: user.id,
       query: query.trim(),
       location: location?.trim() || null,
       employmentType: employmentType || 'all',
@@ -106,8 +120,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/searches - Delete a tracked search (expects ?id=xxx)
+// DELETE /api/searches - Delete a tracked search (only if it belongs to this user)
 export async function DELETE(request: NextRequest) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -119,8 +138,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete the search (cascade will handle search_jobs)
-    await db.delete(trackedSearches).where(eq(trackedSearches.id, id));
+    // Only delete if this search belongs to the current user
+    await db
+      .delete(trackedSearches)
+      .where(and(eq(trackedSearches.id, id), eq(trackedSearches.userId, user.id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
