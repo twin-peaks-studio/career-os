@@ -54,7 +54,7 @@ export default function SignupPage() {
 
     // Try redirecting — if auto-confirmed, this works. If not, user sees the success message.
     setTimeout(() => {
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     }, 1500);
   };

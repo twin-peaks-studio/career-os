@@ -41,10 +41,10 @@ export async function updateSession(request: NextRequest) {
   // Only redirect page requests, not API calls (API routes return 401 themselves)
   if (!request.nextUrl.pathname.startsWith('/api')) {
     const isPublicPage =
+      request.nextUrl.pathname === '/' ||
       request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/signup') ||
-      request.nextUrl.pathname.startsWith('/auth') ||
-      request.nextUrl.pathname.startsWith('/landing');
+      request.nextUrl.pathname.startsWith('/auth');
 
     if (!user && !isPublicPage) {
       // Not logged in + trying to access a protected page → go to login
@@ -57,7 +57,7 @@ export async function updateSession(request: NextRequest) {
                  request.nextUrl.pathname.startsWith('/signup'))) {
       // Already logged in + on login page → go to dashboard
       const url = request.nextUrl.clone();
-      url.pathname = '/';
+      url.pathname = '/dashboard';
       return NextResponse.redirect(url);
     }
   }

@@ -34,7 +34,7 @@ export default function LoginPage() {
     }
 
     // Redirect to dashboard and refresh so middleware picks up the new session
-    router.push('/');
+    router.push('/dashboard');
     router.refresh();
   };
 
