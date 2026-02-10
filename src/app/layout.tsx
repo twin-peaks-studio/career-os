@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Hunt",
-  description: "Aggregated job search from multiple sources",
+  title: "Career OS",
+  description: "The operating system for your job search. Find roles, tailor your resume, and apply with confidence.",
 };
 
 export default function RootLayout({

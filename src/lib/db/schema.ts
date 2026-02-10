@@ -60,8 +60,15 @@ export const savedJobs = pgTable('saved_jobs', {
   status: text('status').default('saved'),
 });
 
+export const waitlist = pgTable('waitlist', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  joinedAt: timestamp('joined_at').notNull(),
+});
+
 export type TrackedSearchRow = typeof trackedSearches.$inferSelect;
 export type JobRow = typeof jobs.$inferSelect;
 export type SearchJobRow = typeof searchJobs.$inferSelect;
 export type SeenJobRow = typeof seenJobs.$inferSelect;
 export type SavedJobRow = typeof savedJobs.$inferSelect;
+export type WaitlistRow = typeof waitlist.$inferSelect;
