@@ -1,6 +1,6 @@
-# Job Hunt
+# Career OS
 
-A local job search aggregator that consolidates job postings from Google Jobs, Indeed, and LinkedIn into a single view.
+An AI-powered job search platform that consolidates postings from Google Jobs, Indeed, and LinkedIn into a single view — with resume tailoring coming soon.
 
 ## Features
 

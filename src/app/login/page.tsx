@@ -46,7 +46,7 @@ export default function LoginPage() {
             <Briefcase className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Welcome back</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">Sign in to Job Hunt</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">Sign in to Career OS</p>
         </div>
 
         <Card hover={false}>
